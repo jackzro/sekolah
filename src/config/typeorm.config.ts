@@ -40,9 +40,9 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'mysql',
-  host: 'localhost',
+  host: 'dbsekolah1.ch6uec0vbw5c.ap-southeast-1.rds.amazonaws.com',
   port: 3306,
-  username: 'jack',
+  username: 'admin',
   password: 'jack2001',
   database: 'sekolah',
   entities: [__dirname + '/../**/*.entity.{js,ts}'],
