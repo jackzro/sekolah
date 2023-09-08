@@ -171,6 +171,7 @@ export class StudentsService {
           new Date().getMonth() + 1
         }-${new Date().getDate()}`,
       })
+      .andWhere('students.status =:status', { status: true })
       // .andWhere('payments.tglTagihan <:nowDate', {
       //   nowDate: new Date(`2022-12-10`),
       // })
@@ -256,6 +257,24 @@ export class StudentsService {
       .orderBy('payments.tglTagihan', 'ASC')
       .getMany();
     return students;
+  }
+
+  async updateStatusToFalse(id) {
+    return await this.studentRepository.update(id, {
+      status: false,
+    });
+  }
+
+  async updateStatusToTrue(id) {
+    return await this.studentRepository.update(id, {
+      status: true,
+    });
+  }
+
+  async updateStatusAll() {
+    const students = await this.studentRepository.find();
+    students.map(async (student) => await this.updateStatusToFalse(student.id));
+    return;
   }
 
   // async dendaSwitch(id, status) {

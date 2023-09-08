@@ -175,6 +175,29 @@ export class PaymentsService {
     return payment.save();
   }
 
+  async createUangPMB(student) {
+    const payment = new Payment();
+    payment.student = student.id;
+    payment.unit = student.unit;
+    payment.iuran = 'Uang PMB';
+    payment.period = `Tahun Ajaran 2024/2025`;
+    payment.jumlahTagihan = student.uangPMB;
+    payment.vBcaKode = student.vBcaUangPMB;
+    payment.jumlahDenda = 0;
+    payment.jumlahAdmin = 5000;
+    payment.bulanIuran = `2023-8`;
+    payment.tglTagihan = new Date('2023-07-25');
+    payment.tglDenda = new Date('2023-08-10');
+    payment.caraBayar = '';
+    payment.jumlahBayar = '';
+    payment.userBayar = '';
+    payment.buktiBayar = '';
+    payment.statusBayar = false;
+    payment.cicilanKe = 0;
+    payment.keterangan = '';
+    return payment.save();
+  }
+
   async filterUangKegiatan() {
     const payments = await this.paymentRepository.find({
       where: {

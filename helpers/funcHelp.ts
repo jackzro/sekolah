@@ -6,5 +6,7 @@ export const vBcaKodeGenerate = (detail) => {
       return '3';
     case 'Uang Daftar Ulang':
       return '4';
+    case 'Uang PMB':
+      return '5';
   }
 };

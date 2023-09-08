@@ -102,6 +102,52 @@ export class StudentsController {
     return this.studentsService.findAll();
   }
 
+  @Post('createUangPMB')
+  createUangPMB(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      const detail = {
+        id: students['SISWA-ID'],
+        grade: students['KELAS'],
+        uangPMB: students['UPMB'],
+        vBcaUangPMB: '5' + students['SISWA-ID'],
+        unit: students['UNIT'],
+      };
+      if (students['SISWA-ID'] && students['UPMB']) {
+        await this.paymentsService.createUangPMB(detail);
+      }
+    });
+  }
+
+  @Post('updateStatusTrue')
+  async updateStatusFalse(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      if (students['SISWA-ID']) {
+        await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+      }
+    });
+    return 'All Update to True';
+  }
+
+  @Get('updateStatusAll')
+  async updateStatusAll() {
+    return await this.studentsService.updateStatusAll();
+  }
+
   @Post('updateUsek')
   updateUsek(@Body() data) {
     const dirpath = join(__dirname, '..', '..', '..', 'uploads');
@@ -273,6 +319,35 @@ export class StudentsController {
       }
     }
     return data;
+  }
+
+  @Post('createUangSekolahById')
+  async createUangSekolahById(@Body() data) {
+    const student = await this.studentsService.findID(data.id);
+    if (student.uangSekolah) {
+      if (
+        student.grade === 'SD 6' ||
+        student.grade === 'SMP 9' ||
+        student.grade === 'SMA 12'
+      ) {
+        BULAN_KELAS_LULUSAN.map(async (bulan) => {
+          await this.paymentsService.buatUSek(student, bulan, data.tahun);
+        });
+      } else if (
+        student.grade === 'SD 1' ||
+        student.grade === 'SMP 7' ||
+        student.grade === 'SMA 10'
+      ) {
+        BULAN_KELAS_NAIKAN.map(async (bulan) => {
+          await this.paymentsService.buatUSek(student, bulan, data.tahun);
+        });
+      } else {
+        bulans.map(async (bulan) => {
+          await this.paymentsService.buatUSek(student, bulan, data.tahun);
+        });
+      }
+    }
+    return student;
   }
 
   @Post('updatePaymentStatus')
