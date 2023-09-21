@@ -124,18 +124,22 @@ export class StudentsController {
         await this.paymentsService.createUangPMB(detail);
       }
     });
+
+    return 'done create PMB';
   }
 
-  @Post('updateStatusTrue')
+  @Post('updateStatusFalse')
   async updateStatusFalse(@Body() data) {
+    console.log(data);
     const dirpath = join(__dirname, '..', '..', '..', 'uploads');
     const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
       type: 'array',
     });
     const worksheet = workbook.Sheets[data.arraySheet];
     const json = xlsx.utils.sheet_to_json(worksheet);
-
+    console.log(json);
     json.map(async (students) => {
+      console.log(students['SISWA-ID']);
       if (students['SISWA-ID']) {
         await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
       }
@@ -357,6 +361,7 @@ export class StudentsController {
         data.id,
         updateStatus.tanggalBayar,
         updateStatus.tipepayment,
+        updateStatus.kodeTransaksi,
       );
     });
   }

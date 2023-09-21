@@ -41,6 +41,9 @@ export class Payment extends BaseEntity {
   bulanIuran: string;
 
   @Column()
+  kodeTransaksi: string;
+
+  @Column()
   tglTagihan: Date;
 
   @Column()

@@ -185,9 +185,9 @@ export class PaymentsService {
     payment.vBcaKode = student.vBcaUangPMB;
     payment.jumlahDenda = 0;
     payment.jumlahAdmin = 5000;
-    payment.bulanIuran = `2023-8`;
-    payment.tglTagihan = new Date('2023-07-25');
-    payment.tglDenda = new Date('2023-08-10');
+    payment.bulanIuran = `2023-9`;
+    payment.tglTagihan = new Date('2023-08-25');
+    payment.tglDenda = new Date('2023-09-10');
     payment.caraBayar = '';
     payment.jumlahBayar = '';
     payment.userBayar = '';
@@ -293,11 +293,12 @@ export class PaymentsService {
     return payments;
   }
 
-  async updateStatusBayarTunai(data, tanggal, tipe) {
+  async updateStatusBayarTunai(data, tanggal, tipe, kodeTransaksi) {
     const payment = await this.paymentRepository.update(data, {
       statusBayar: true,
       caraBayar: tipe,
       tanggalBayar: tanggal,
+      kodeTransaksi: kodeTransaksi,
     });
     return payment;
   }
