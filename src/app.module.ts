@@ -14,7 +14,7 @@ import { DepositsModule } from './deposits/deposits.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env.dev'] }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync(typeOrmConfigAsync),
     UsersModule,
