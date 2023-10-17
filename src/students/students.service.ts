@@ -56,7 +56,11 @@ export class StudentsService {
   }
 
   findAll() {
-    return this.studentRepository.find();
+    return this.studentRepository.find({
+      where: {
+        status: true,
+      },
+    });
     // return `This action returns all students`;
   }
 
@@ -101,6 +105,7 @@ export class StudentsService {
   async findStudentsbyUnit(unit) {
     const students = await this.studentRepository.find({
       unit,
+      status: true,
     });
     return students;
   }
