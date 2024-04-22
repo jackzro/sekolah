@@ -57,6 +57,7 @@ export class PaymentsService {
     payment.buktiBayar = '';
     payment.statusBayar = false;
     payment.keterangan = '';
+    payment.kodeTransaksi = '';
     return await payment.save();
   }
 
@@ -175,6 +176,88 @@ export class PaymentsService {
     return payment.save();
   }
 
+  async createUangDaftarUlang(student, detail) {
+    if (
+      student.grade === 'SD 6' ||
+      student.grade === 'SMP 9' ||
+      student.grade === 'SMA 12' ||
+      student.grade === 'TKB'
+    ) {
+      return;
+    }
+    let uangDaftarUlang = 0;
+    switch (student.unit) {
+      case 'KB/TK MARIA YACHINTA':
+        uangDaftarUlang = 350000;
+        break;
+      case 'SD MARIA FRANSISKA':
+        uangDaftarUlang = 400000;
+        break;
+      case 'SMP PAX ECCLESIA':
+        uangDaftarUlang = 450000;
+        break;
+      case 'SMA PAX PATRIAE':
+        uangDaftarUlang = 450000;
+        break;
+    }
+
+    const tanggal = detail.tanggalTunggakan.split('/');
+    const payment = new Payment();
+    payment.student = student.id;
+    payment.unit = student.unit;
+    payment.iuran = 'Uang Daftar Ulang';
+    payment.period = `Tahun Ajaran ${detail.tahun}`;
+    payment.jumlahTagihan = uangDaftarUlang;
+    payment.vBcaKode = '4' + student.id;
+    payment.jumlahDenda = 0;
+    payment.jumlahAdmin = 5000;
+    payment.bulanIuran = `${tanggal[2]}-${tanggal[0]}`;
+    payment.tglTagihan = new Date(detail.tanggalTunggakan);
+    payment.tglDenda = new Date(detail.tanggalDenda);
+    payment.caraBayar = '';
+    payment.jumlahBayar = '';
+    payment.userBayar = '';
+    payment.buktiBayar = '';
+    payment.statusBayar = false;
+    payment.cicilanKe = 0;
+    payment.keterangan = '';
+    payment.kodeTransaksi = '';
+    return payment.save();
+  }
+
+  async tambahUangAprilDaftarUlang(student) {
+    if (
+      student.grade === 'SD 6' ||
+      student.grade === 'SMP 9' ||
+      student.grade === 'SMA 12' ||
+      student.grade === 'TKB'
+    ) {
+      return student.payments[0].jumlahTagihan;
+    }
+    let paymentAprildanDaftarUlang = 0;
+
+    if (student.grade === 'TKA' || student.grade === 'PG') {
+      paymentAprildanDaftarUlang = student.payments[0].jumlahTagihan + 350000;
+    } else if (
+      student.grade === 'SD 1' ||
+      student.grade === 'SD 2' ||
+      student.grade === 'SD 3' ||
+      student.grade === 'SD 4' ||
+      student.grade === 'SD 5'
+    ) {
+      paymentAprildanDaftarUlang = student.payments[0].jumlahTagihan + 400000;
+    } else if (student.grade === 'SMP 7' || student.grade === 'SMP 8') {
+      paymentAprildanDaftarUlang = student.payments[0].jumlahTagihan + 450000;
+    } else if (student.grade === 'SMA 10' || student.grade === 'SMA 11') {
+      paymentAprildanDaftarUlang = student.payments[0].jumlahTagihan + 450000;
+    }
+    await this.paymentRepository.update(student.payments[0].id, {
+      jumlahTagihan: paymentAprildanDaftarUlang,
+    });
+
+    return paymentAprildanDaftarUlang;
+  }
+
   async createUangPMB(student) {
     const payment = new Payment();
     payment.student = student.id;
@@ -239,7 +322,7 @@ export class PaymentsService {
     return payments;
   }
 
-  async paymentsViaBca(data) {
+  async paymentsViaBca(data, tanggal) {
     let pembayaran = data;
     const formatTanggal = data.tanggalTransaksi.split('/');
     pembayaran.tanggalTransaksi = `20${formatTanggal[2]}-${formatTanggal[1]}-${formatTanggal[0]}`;
@@ -247,6 +330,7 @@ export class PaymentsService {
       .createQueryBuilder('payments')
       .orderBy('payments.tglTagihan', 'ASC')
       .where('payments.vBcaKode =:vBca', { vBca: data.vBcaKode })
+      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
       .getMany();
     // const payments = await this.paymentRepository.find({
     //   where: {
@@ -254,13 +338,34 @@ export class PaymentsService {
     //   },
     //   relations: ['student'],
     // });
-    // console.log(payments);
+    let isNotEnough = false;
+    console.log(payments.length);
     await payments.map(async (payment) => {
+      if (isNotEnough) return;
+      const totalCost = payment.jumlahTagihan + payment.jumlahDenda;
       if (payment.statusBayar === false) {
-        if (payment.jumlahTagihan <= pembayaran.totalPembayaran) {
-          pembayaran.totalPembayaran -= Number(payment.jumlahTagihan);
-          await this.updateStatus(payment, pembayaran.tanggalTransaksi);
+        if (pembayaran.totalPembayaran >= totalCost) {
+          if (
+            new Date(pembayaran.tanggalTransaksi) <=
+            new Date(tanggal.split('T')[0])
+          ) {
+            pembayaran.totalPembayaran -= Number(totalCost);
+            console.log(pembayaran);
+            // await this.updateStatus(
+            //   payment,
+            //   pembayaran.tanggalTransaksi,
+            //   false,
+            // );
+          } else {
+            console.log('lebig tanggla');
+            // pembayaran.totalPembayaran -= Number(
+            //   payment.jumlahTagihan + payment.jumlahDenda,
+            // );
+            // await this.updateStatus(payment, pembayaran.tanggalTransaksi, true);
+          }
         } else {
+          isNotEnough = true;
+          console.log('duit ga cukup', pembayaran.totalPembayaran, totalCost);
           return;
         }
       } else if (payment.statusBayar === true) {
@@ -303,11 +408,12 @@ export class PaymentsService {
     return payment;
   }
 
-  async updateStatus(data, tanggal) {
+  async updateStatus(data, tanggal, denda) {
     const payment = await this.paymentRepository.update(data.id, {
       statusBayar: true,
       caraBayar: 'BCA VA',
       tanggalBayar: tanggal,
+      jumlahDenda: denda === false ? 0 : data.jumlahDenda,
     });
     return payment;
   }
@@ -380,24 +486,60 @@ export class PaymentsService {
     return payment;
   }
 
-  // async hitungDenda(id) {
-  //   const payment = await this.paymentRepository
-  //     .createQueryBuilder('payments')
-  //     .leftJoinAndSelect('payments.student', 'student')
-  //     .where('student.id =:id', { id })
-  //     .andWhere('payments.iuran =:iuran', { iuran: 'Uang Sekolah' })
-  //     .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
-  //     .andWhere('payments.tglDenda <=:nowDate', {
-  //       nowDate: `${new Date().getFullYear()}-${
-  //         new Date().getMonth() + 1
-  //       }-${new Date().getDate()}`,
-  //     })
-  //     .getMany();
-  //   return {
-  //     uangDenda: findNthTerm(25000, 25000, payment.length),
-  //     statusDenda: payment[0].student.dendaActive,
-  //   };
-  // }
+  async hitungDenda(id) {
+    const payment = await this.paymentRepository
+      .createQueryBuilder('payments')
+      .leftJoinAndSelect('payments.student', 'student')
+      .where('student.id =:id', { id })
+      .andWhere('payments.iuran =:iuran', { iuran: 'Uang Sekolah' })
+      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
+      .andWhere('payments.tglDenda >=:startDate', {
+        startDate: `2023-1-1`,
+      })
+      .andWhere('payments.tglDenda <=:nowDate', {
+        nowDate: `${new Date().getFullYear()}-${
+          new Date().getMonth() + 1
+        }-${new Date().getDate()}`,
+      })
+      .getMany();
+    return {
+      uangDenda: findNthTerm(25000, 25000, payment.length),
+      // statusDenda: payment[0].student.dendaActive,
+    };
+  }
+
+  async hitungDendaperBulan(detail, jumlah) {
+    const payment = Promise.resolve(
+      //@ts-ignore
+      await this.paymentRepository.update(detail.id, {
+        jumlahDenda: detail.jumlahDenda + 25000,
+      }),
+    );
+    return payment;
+  }
+
+  async updateUangDenda(id) {
+    const payment = await this.paymentRepository
+      .createQueryBuilder('payments')
+      .leftJoinAndSelect('payments.student', 'student')
+      .where('student.id =:id', { id })
+      .andWhere('payments.iuran =:iuran', { iuran: 'Uang Sekolah' })
+      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
+      .andWhere('payments.tglDenda >=:startDate', {
+        startDate: `2024-1-1`,
+      })
+      .andWhere('payments.tglDenda <=:nowDate', {
+        nowDate: `${new Date().getFullYear()}-${
+          new Date().getMonth() + 1
+        }-${new Date().getDate()}`,
+      })
+      .orderBy('payments.tglDenda', 'DESC')
+      .getMany();
+    for (let i = payment.length; i >= 1; i--) {
+      await this.hitungDendaperBulan(payment[i - 1], i);
+    }
+    return payment;
+  }
 
   async createFile() {
     const payment = await this.paymentRepository
@@ -438,9 +580,28 @@ export class PaymentsService {
 
   async updatePaymentById(data) {
     try {
-      const payment = await this.paymentRepository.update(data.id, {
-        jumlahTagihan: data.amount.jumlahTagihan,
-      });
+      const { jumlahTagihan, jumlahDenda } = data.amount;
+      let hasilUbah: any = {};
+      if (
+        (jumlahDenda === undefined || jumlahDenda === '') &&
+        (jumlahTagihan !== undefined || jumlahTagihan !== '')
+      ) {
+        hasilUbah.jumlahTagihan = data.amount.jumlahTagihan;
+      } else if (
+        (jumlahDenda !== undefined || jumlahDenda !== '') &&
+        (jumlahTagihan === undefined || jumlahTagihan === '')
+      ) {
+        hasilUbah.jumlahDenda = data.amount.jumlahDenda;
+      } else if (
+        jumlahDenda !== undefined &&
+        jumlahTagihan !== undefined &&
+        jumlahDenda !== '' &&
+        jumlahTagihan !== ''
+      ) {
+        hasilUbah.jumlahDenda = data.amount.jumlahDenda;
+        hasilUbah.jumlahTagihan = data.amount.jumlahTagihan;
+      }
+      const payment = await this.paymentRepository.update(data.id, hasilUbah);
       return payment;
     } catch (error) {
       return 'Any Error';

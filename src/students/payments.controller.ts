@@ -13,16 +13,17 @@ import { PaymentsService } from './payments.service';
 @Controller('payments')
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
+
   @Post('income')
   async countIncome(@Body() data) {
     return await this.paymentsService.income(data);
   }
 
-  // @Get(':id')
-  // async hitungDenda(@Param() id) {
-  //   const data = await this.paymentsService.hitungDenda(id.id);
-  //   return data;
-  // }
+  @Get(':id')
+  async hitungDenda(@Param() id) {
+    const data = await this.paymentsService.hitungDenda(id.id);
+    return data;
+  }
 
   @Post('/updateJumlahTagihan')
   async updateJumlahTagihan(@Body() data) {

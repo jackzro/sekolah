@@ -13,6 +13,7 @@ export class StudentsService {
     @InjectRepository(StudentRepository)
     private studentRepository: StudentRepository,
   ) {}
+
   async create(createStudentDto: CreateStudentDto) {
     const student = new Student();
     student.id = createStudentDto['SISWA-ID'];
@@ -43,6 +44,7 @@ export class StudentsService {
   async addStudent(student) {
     student.vBcaSekolah = '1' + student.id;
     student.vBcaKegiatan = '2' + student.id;
+    student.status = true;
     return await this.studentRepository.save(student);
   }
 
@@ -210,6 +212,31 @@ export class StudentsService {
       .getMany();
   }
 
+  async filterSetahunUangDaftarUlang() {
+    return await this.studentRepository
+      .createQueryBuilder('students')
+      .leftJoinAndSelect('students.payments', 'payments')
+      .andWhere('payments.bulanIuran =:nowDate', {
+        nowDate: `2024-6`,
+      })
+      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: true })
+      .orderBy('students.id', 'ASC')
+      .getMany();
+  }
+
+  async filterTidakSetahunUangDaftarUlang() {
+    return await this.studentRepository
+      .createQueryBuilder('students')
+      .leftJoinAndSelect('students.payments', 'payments')
+      .andWhere('payments.bulanIuran =:nowDate', {
+        nowDate: `2024-4`,
+      })
+      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
+      .andWhere('students.grade ')
+      .orderBy('students.id', 'ASC')
+      .getMany();
+  }
+
   async createFileBca() {
     const students = await this.studentRepository
       .createQueryBuilder('students')
@@ -221,6 +248,7 @@ export class StudentsService {
         nowDate: `${new Date().getFullYear()}-${
           new Date().getMonth() + 1
         }-${new Date().getDate()}`,
+        // nowDate: `2024-1-10`,
       })
       // .andWhere('payments.tglTagihan <=:nowDate', {
       //   nowDate: new Date(`2022-6-25`),
@@ -252,7 +280,7 @@ export class StudentsService {
     const students = await this.studentRepository
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.payments', 'payments')
-      // .where('payments.iuran =:iuran', { iuran: 'Uang Sekolah' })
+      .where('payments.iuran =:iuran', { iuran: 'Uang Sekolah' })
       .where('payments.statusBayar =:statusBayar', { statusBayar: false })
       .andWhere('payments.tglTagihan <=:tglTagihan', {
         tglTagihan: `${new Date().getFullYear()}-${
@@ -280,6 +308,14 @@ export class StudentsService {
     const students = await this.studentRepository.find();
     students.map(async (student) => await this.updateStatusToFalse(student.id));
     return;
+  }
+
+  async updateAllStudentUangDenda() {
+    // const students = await this.studentRepository.find();
+    // students.map(student=>{
+    //   this
+    // })
+    // console.log(students);
   }
 
   // async dendaSwitch(id, status) {

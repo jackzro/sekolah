@@ -24,6 +24,7 @@ import {
 } from 'helpers/payment-type';
 import { PaymentsService } from './payments.service';
 import { transformAuthInfo } from 'passport';
+import { Cron } from '@nestjs/schedule';
 
 @Controller('students')
 export class StudentsController {
@@ -46,6 +47,15 @@ export class StudentsController {
   @Post('payment/file/createFile')
   async bikinExcelBcaPayment(@Body() data) {
     return await this.paymentsService.createFile();
+  }
+
+  @Cron('0 0 11 * *')
+  @Get('updateAllUangDenda')
+  async updateAllUangDenda(@Param('id') id: string) {
+    const students = await this.studentsService.findAll();
+    return students.map(
+      async (student) => await this.paymentsService.updateUangDenda(student.id),
+    );
   }
 
   @Get()
@@ -130,14 +140,12 @@ export class StudentsController {
 
   @Post('updateStatusFalse')
   async updateStatusFalse(@Body() data) {
-    console.log(data);
     const dirpath = join(__dirname, '..', '..', '..', 'uploads');
     const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
       type: 'array',
     });
     const worksheet = workbook.Sheets[data.arraySheet];
     const json = xlsx.utils.sheet_to_json(worksheet);
-    console.log(json);
     json.map(async (students) => {
       console.log(students['SISWA-ID']);
       if (students['SISWA-ID']) {
@@ -368,8 +376,11 @@ export class StudentsController {
 
   @Post('updatePaymentStatusViaFIle')
   async updateStatusViaFile(@Body() updateStatus) {
-    await updateStatus.map(async (data) => {
-      return await this.paymentsService.paymentsViaBca(data);
+    await updateStatus.dataBayaran.map(async (data) => {
+      return await this.paymentsService.paymentsViaBca(
+        data,
+        updateStatus.tanggalBatas,
+      );
     });
   }
 
@@ -378,6 +389,7 @@ export class StudentsController {
     return await this.paymentsService.updateStatus(
       updateStatus,
       updateStatus.tanggal,
+      false,
     );
   }
 
@@ -519,6 +531,40 @@ export class StudentsController {
       }),
     );
     return 'Uang Ujian is created !!!';
+  }
+
+  //bayar setahun
+  @Post('/bayarsetahun/uangDaftarUlang')
+  async bayarsetahunBikinUangDaftarUlang(@Body() detail) {
+    const students = await this.studentsService.filterSetahunUangDaftarUlang();
+    await Promise.all(
+      students.map((student) => {
+        this.paymentsService.createUangDaftarUlang(student, detail);
+      }),
+    );
+    return 'Uang Daftar Ulang is created !!!';
+  }
+
+  //tidak bayar setahun
+  @Post('/tidakbayarsetahun/uangDaftarUlang')
+  async tidakbayarsetahunBikinUangDaftarUlang(@Body() detail) {
+    const students =
+      await this.studentsService.filterTidakSetahunUangDaftarUlang();
+
+    let final = [];
+    await Promise.all(
+      students.map(async (student) => {
+        final.push({
+          name: student.name,
+          grade: student.grade,
+          tagihanSebelumnya: student.payments[0].jumlahTagihan,
+          tagihanNow: await this.paymentsService.tambahUangAprilDaftarUlang(
+            student,
+          ),
+        });
+      }),
+    );
+    return final;
   }
 
   // @Post('dendaActivation')

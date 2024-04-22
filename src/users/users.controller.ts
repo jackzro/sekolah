@@ -25,6 +25,11 @@ export class UsersController {
     private authService: AuthService,
   ) {}
 
+  @Get()
+  getAll() {
+    return this.usersService.findAll();
+  }
+
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
