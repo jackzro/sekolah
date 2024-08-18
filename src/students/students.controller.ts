@@ -24,7 +24,7 @@ import {
 } from 'helpers/payment-type';
 import { PaymentsService } from './payments.service';
 import { transformAuthInfo } from 'passport';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 
 @Controller('students')
 export class StudentsController {
