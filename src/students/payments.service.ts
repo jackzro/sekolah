@@ -71,6 +71,7 @@ export class PaymentsService {
     } `;
     payment.jumlahTagihan = student.uangSekolah;
     payment.vBcaKode = student.vBcaSekolah;
+    payment.kodeTransaksi = '';
     payment.jumlahDenda = 0;
     payment.jumlahAdmin = 5000;
     if (bulan >= 7 && bulan <= 12) {
@@ -102,6 +103,16 @@ export class PaymentsService {
     payment.statusBayar = false;
     payment.keterangan = '';
     return await payment.save();
+  }
+
+  async deletePmb() {
+    const pmb = await this.paymentRepository.find({
+      iuran: 'Uang PMB',
+    });
+    pmb.map(async (detail) => {
+      await this.paymentRepository.delete({ id: detail.id });
+    });
+    return pmb;
   }
 
   async createUangLainnya(student, detail) {
@@ -149,6 +160,32 @@ export class PaymentsService {
     payment.statusBayar = false;
     payment.cicilanKe = 0;
     payment.keterangan = '';
+    payment.kodeTransaksi = '';
+    return payment.save();
+  }
+
+  async createUangKegiatanlewatExcel(student) {
+    // const tanggal = detail.tanggalTunggakan.split('/');
+    const payment = new Payment();
+    payment.student = student.id;
+    payment.unit = student.unit;
+    payment.iuran = 'Uang Kegiatan';
+    payment.period = `Tahun Ajaran ${student.tahun}`;
+    payment.jumlahTagihan = student.uangKegiatan;
+    payment.vBcaKode = student.vBcaKegiatan;
+    payment.jumlahDenda = 0;
+    payment.jumlahAdmin = 5000;
+    payment.bulanIuran = `2024-8`;
+    payment.tglTagihan = new Date(student.tanggalTunggakan);
+    payment.tglDenda = new Date(student.tanggalDenda);
+    payment.caraBayar = '';
+    payment.jumlahBayar = '';
+    payment.userBayar = '';
+    payment.buktiBayar = '';
+    payment.statusBayar = false;
+    payment.cicilanKe = 0;
+    payment.keterangan = '';
+    payment.kodeTransaksi = '';
     return payment.save();
   }
 
@@ -278,6 +315,7 @@ export class PaymentsService {
     payment.statusBayar = false;
     payment.cicilanKe = 0;
     payment.keterangan = '';
+    payment.kodeTransaksi = '';
     return payment.save();
   }
 
@@ -322,6 +360,16 @@ export class PaymentsService {
     return payments;
   }
 
+  async updateDendatonol(data) {
+    const payment = await this.paymentRepository.update(data.id, {
+      // statusBayar: true,
+      // caraBayar: 'BCA VA',
+      // tanggalBayar: tanggal,
+      jumlahDenda: 0,
+    });
+    return payment;
+  }
+
   async paymentsViaBca(data, tanggal) {
     let pembayaran = data;
     const formatTanggal = data.tanggalTransaksi.split('/');
@@ -338,40 +386,59 @@ export class PaymentsService {
     //   },
     //   relations: ['student'],
     // });
+
     let isNotEnough = false;
-    console.log(payments.length);
     await payments.map(async (payment) => {
+      // this.updateDendatonol(payment);
       if (isNotEnough) return;
       const totalCost = payment.jumlahTagihan + payment.jumlahDenda;
       if (payment.statusBayar === false) {
         if (pembayaran.totalPembayaran >= totalCost) {
-          if (
-            new Date(pembayaran.tanggalTransaksi) <=
-            new Date(tanggal.split('T')[0])
-          ) {
-            pembayaran.totalPembayaran -= Number(totalCost);
-            console.log(pembayaran);
-            // await this.updateStatus(
-            //   payment,
-            //   pembayaran.tanggalTransaksi,
-            //   false,
-            // );
-          } else {
-            console.log('lebig tanggla');
-            // pembayaran.totalPembayaran -= Number(
-            //   payment.jumlahTagihan + payment.jumlahDenda,
-            // );
-            // await this.updateStatus(payment, pembayaran.tanggalTransaksi, true);
-          }
+          pembayaran.totalPembayaran -= Number(totalCost);
+          await this.updateStatus(payment, pembayaran.tanggalTransaksi, true);
         } else {
           isNotEnough = true;
-          console.log('duit ga cukup', pembayaran.totalPembayaran, totalCost);
           return;
         }
       } else if (payment.statusBayar === true) {
         return;
       }
     });
+    // let isNotEnough = false;
+    // console.log(payments.length);
+    // await payments.map(async (payment) => {
+    //   if (isNotEnough) return;
+    //   const totalCost = payment.jumlahTagihan + payment.jumlahDenda;
+    //   if (payment.statusBayar === false) {
+    //     if (pembayaran.totalPembayaran >= totalCost) {
+    //       if (
+    //         new Date(pembayaran.tanggalTransaksi) <=
+    //         new Date(tanggal.split('T')[0])
+    //       ) {
+    //         pembayaran.totalPembayaran -= Number(totalCost);
+    //         console.log(pembayaran);
+    //         // await this.updateStatus(
+    //         //   payment,
+    //         //   pembayaran.tanggalTransaksi,
+    //         //   false,
+    //         // );
+    //       } else {
+    //         console.log('lebig tanggla');
+    //         // pembayaran.totalPembayaran -= Number(
+    //         //   payment.jumlahTagihan + payment.jumlahDenda,
+    //         // );
+    //         // await this.updateStatus(payment, pembayaran.tanggalTransaksi, true);
+    //       }
+    //     } else {
+    //       isNotEnough = true;
+    //       console.log('duit ga cukup', pembayaran.totalPembayaran, totalCost);
+    //       return;
+    //     }
+    //   } else if (payment.statusBayar === true) {
+    //     return;
+    //   }
+    // });
+
     // function sortByDate(a, b) {
     //   if (new Date(a.bulanIuran) > new Date(b.bulanIuran)) {
     //     return 1;
@@ -423,6 +490,14 @@ export class PaymentsService {
       statusBayar: false,
       caraBayar: '',
       tanggalBayar: '',
+    });
+    return payment;
+  }
+  async cekgabayar() {
+    const payment = await this.paymentRepository.find({
+      statusBayar: false,
+      period: 'Tahun Ajaran 2023/2024',
+      unit: 'SMA PAX PATRIAE',
     });
     return payment;
   }
@@ -561,6 +636,25 @@ export class PaymentsService {
     return payment;
   }
 
+  async hitungProfit() {
+    const payment = await this.paymentRepository
+      .createQueryBuilder('payments')
+      .leftJoinAndSelect('payments.student', 'student')
+      // .orderBy('student.id', 'ASC')
+      .where('payments.statusBayar =:statusBayar', { statusBayar: true })
+      .andWhere('payments.iuran =:iuran', { iuran: 'Uang Ujian' })
+      .andWhere('payments.tanggalBayar >= :startDate', {
+        startDate: new Date('2023-01-01'),
+      })
+      .andWhere('payments.tanggalBayar <= :endDate', {
+        endDate: new Date('2023-12-31'),
+      })
+      .addOrderBy('payments.tglDenda', 'ASC')
+      .getMany();
+    console.log(payment.length, 'uang kegiatan');
+    return payment;
+  }
+
   async income(data) {
     const payment = await this.paymentRepository
       .createQueryBuilder('payments')
@@ -580,26 +674,38 @@ export class PaymentsService {
 
   async updatePaymentById(data) {
     try {
-      const { jumlahTagihan, jumlahDenda } = data.amount;
+      const { jumlahTagihan, jumlahDenda, jumlahBayar } = data.amount;
       let hasilUbah: any = {};
+
       if (
         (jumlahDenda === undefined || jumlahDenda === '') &&
+        (jumlahBayar === undefined || jumlahBayar === '') &&
         (jumlahTagihan !== undefined || jumlahTagihan !== '')
       ) {
         hasilUbah.jumlahTagihan = data.amount.jumlahTagihan;
       } else if (
         (jumlahDenda !== undefined || jumlahDenda !== '') &&
+        (jumlahBayar === undefined || jumlahBayar === '') &&
         (jumlahTagihan === undefined || jumlahTagihan === '')
       ) {
         hasilUbah.jumlahDenda = data.amount.jumlahDenda;
       } else if (
+        (jumlahDenda === undefined || jumlahDenda === '') &&
+        (jumlahBayar !== undefined || jumlahBayar !== '') &&
+        (jumlahTagihan === undefined || jumlahTagihan === '')
+      ) {
+        hasilUbah.jumlahBayar = data.amount.jumlahBayar;
+      } else if (
         jumlahDenda !== undefined &&
         jumlahTagihan !== undefined &&
+        jumlahBayar !== undefined &&
         jumlahDenda !== '' &&
-        jumlahTagihan !== ''
+        jumlahTagihan !== '' &&
+        jumlahBayar !== 's'
       ) {
         hasilUbah.jumlahDenda = data.amount.jumlahDenda;
         hasilUbah.jumlahTagihan = data.amount.jumlahTagihan;
+        hasilUbah.jumlahTagihan = data.amount.jumlahBayar;
       }
       const payment = await this.paymentRepository.update(data.id, hasilUbah);
       return payment;

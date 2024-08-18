@@ -19,6 +19,31 @@ export class PaymentsController {
     return await this.paymentsService.income(data);
   }
 
+  @Delete('deletePmb')
+  async deletePmb() {
+    console.log('deleepmb');
+    const uangpmb = await this.paymentsService.deletePmb();
+    return uangpmb;
+  }
+
+  @Get('cekgakbayar')
+  async cekgakbayar() {
+    const cekgakbayar = await this.paymentsService.cekgabayar();
+
+    return cekgakbayar;
+  }
+
+  @Get('hitungProfit')
+  async hitungProfit() {
+    console.log('hitungProfit');
+    const uangSek = await this.paymentsService.hitungProfit();
+    let profit = 0;
+    uangSek.map((duit) => {
+      profit += duit.jumlahTagihan;
+    });
+    return { profit };
+  }
+
   @Get(':id')
   async hitungDenda(@Param() id) {
     const data = await this.paymentsService.hitungDenda(id.id);

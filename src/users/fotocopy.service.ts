@@ -15,6 +15,7 @@ export class FotocopyService {
     newFotocopy.tanggalFotocopy = data.tanggalFotocopy;
     newFotocopy.jumlah = data.jumlahFotocopy;
     newFotocopy.keperluan = data.keperluan;
+    newFotocopy.user = data.userId;
     return await newFotocopy.save();
   }
 
@@ -28,7 +29,6 @@ export class FotocopyService {
   }
 
   async editFotocopy(data) {
-    console.log(data);
     return await this.FotoCopyRepository.update(data.id, {
       jumlah: data.jumlahFotocopy,
       keperluan: data.keperluan,

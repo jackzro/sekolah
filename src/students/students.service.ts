@@ -147,6 +147,12 @@ export class StudentsService {
     return await this.studentRepository.delete(id);
   }
 
+  async updateNama(id, nama) {
+    return await this.studentRepository.update(id, {
+      name: nama,
+    });
+  }
+
   async cariStudent(data) {
     return await this.studentRepository
       .createQueryBuilder('students')
@@ -166,24 +172,62 @@ export class StudentsService {
       .getMany();
   }
 
-  async filterPaymentbyUnit(data) {
+  async filterPaymentgakbayar(data) {
     return await this.studentRepository
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.payments', 'payments')
-      .where({ unit: data.type })
-      .andWhere('payments.iuran =:iuran', { iuran: data.jenis })
-      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
-      .andWhere('payments.tglDenda <=:nowDate', {
-        nowDate: `${new Date().getFullYear()}-${
-          new Date().getMonth() + 1
-        }-${new Date().getDate()}`,
+      .where({ unit: 'SMA PAX PATRIAE' })
+      .andWhere('payments.period =:period', {
+        period: 'Tahun Ajaran 2023/2024',
       })
-      .andWhere('students.status =:status', { status: true })
+      .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
       // .andWhere('payments.tglTagihan <:nowDate', {
       //   nowDate: new Date(`2022-12-10`),
       // })
       .orderBy('students.id', 'ASC')
       .getMany();
+  }
+
+  async filterPaymentbyUnit(data) {
+    if (data.jenis === 'Uang Sekolah') {
+      return await this.studentRepository
+        .createQueryBuilder('students')
+        .leftJoinAndSelect('students.payments', 'payments')
+        .where({ unit: data.type })
+        .andWhere('payments.iuran IN (:...iuran)', {
+          iuran: ['Uang Sekolah', 'Uang Daftar Ulang'],
+        })
+        .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
+        .andWhere('payments.tglDenda <=:nowDate', {
+          nowDate: `${new Date().getFullYear()}-${
+            new Date().getMonth() + 1
+          }-${new Date().getDate()}`,
+        })
+        .andWhere('students.status =:status', { status: true })
+        // .andWhere('payments.tglTagihan <:nowDate', {
+        //   nowDate: new Date(`2022-12-10`),
+        // })
+        .orderBy('students.id', 'ASC')
+        .getMany();
+    } else {
+      return await this.studentRepository
+        .createQueryBuilder('students')
+        .leftJoinAndSelect('students.payments', 'payments')
+        .where({ unit: data.type })
+        .andWhere('payments.iuran =:iuran', { iuran: data.jenis })
+        .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
+        .andWhere('payments.tglDenda <=:nowDate', {
+          nowDate: `${new Date().getFullYear()}-${
+            new Date().getMonth() + 1
+          }-${new Date().getDate()}`,
+        })
+        .andWhere('students.status =:status', { status: true })
+        // .andWhere('payments.tglTagihan <:nowDate', {
+        //   nowDate: new Date(`2022-12-10`),
+        // })
+        .orderBy('students.id', 'ASC')
+        .getMany();
+    }
   }
 
   async filterSetahun() {
@@ -304,9 +348,24 @@ export class StudentsService {
     });
   }
 
-  async updateStatusAll() {
+  async naikkelas(id, grade) {
+    return await this.studentRepository.update(id, {
+      grade,
+    });
+  }
+
+  async updateStatusAll(status) {
     const students = await this.studentRepository.find();
-    students.map(async (student) => await this.updateStatusToFalse(student.id));
+    if (status === 'False') {
+      students.map(
+        async (student) => await this.updateStatusToFalse(student.id),
+      );
+    } else if (status === 'True') {
+      students.map(
+        async (student) => await this.updateStatusToTrue(student.id),
+      );
+    }
+
     return;
   }
 

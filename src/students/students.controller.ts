@@ -49,7 +49,7 @@ export class StudentsController {
     return await this.paymentsService.createFile();
   }
 
-  @Cron('0 0 11 * *')
+  // @Cron('0 0 11 * *')
   @Get('updateAllUangDenda')
   async updateAllUangDenda(@Param('id') id: string) {
     const students = await this.studentsService.findAll();
@@ -155,9 +155,29 @@ export class StudentsController {
     return 'All Update to True';
   }
 
-  @Get('updateStatusAll')
-  async updateStatusAll() {
-    return await this.studentsService.updateStatusAll();
+  @Post('updateStatusAll')
+  async updateStatusAll(@Body() data) {
+    return await this.studentsService.updateStatusAll(data.status);
+  }
+
+  @Post('pmb/updateUbahNamaPMB')
+  async updateUbahNamaPMB(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      if (students['id'] && students['nama']) {
+        await this.studentsService.updateNama(students['id'], students['nama']);
+      }
+    });
+
+    return '';
   }
 
   @Post('updateUsek')
@@ -184,6 +204,137 @@ export class StudentsController {
     return '';
   }
 
+  @Post('createUangSekolahByExcelDariBulanJuly')
+  createUangSekolahDariBulanJuly(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+        await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+        const detail = {
+          id: students['SISWA-ID'],
+          grade: students['KELAS'],
+          uangSekolah: students['USEK 2024/2025'],
+          vBcaSekolah: '1' + students['SISWA-ID'],
+          unit: students['UNIT'],
+        };
+
+        bulans.map(async (bulan) => {
+          await this.paymentsService.createUangSekolah(detail, bulan);
+        });
+      }
+    });
+
+    return '';
+  }
+
+  @Post('excelstatustotrue')
+  excelstatus(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+    });
+
+    return '';
+  }
+
+  @Post('bikinUangKegiatan')
+  bikinUangKegiatan(@Body() data) {
+    console.log('bikinUangKegiatan');
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+    json.map(async (students) => {
+      if (
+        students['SISWA-ID'] === undefined ||
+        students['U.KEG BARU'] === undefined
+      ) {
+        return;
+      }
+      const stu = {
+        id: students['SISWA-ID'],
+        unit: students['UNIT'],
+        tahun: '2024/2025',
+        uangKegiatan: students['U.KEG BARU'],
+        vBcaKegiatan: students['vbca ukeg'],
+        tanggalTunggakan: '2024-7-25',
+        tanggalDenda: '2024-8-10',
+      };
+      // console.log(students['SISWA-ID'], students['U.KEG BARU']);
+      await this.paymentsService.createUangKegiatanlewatExcel(stu);
+    });
+  }
+
+  @Post('naikkelas')
+  naikkelas(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+        await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+        await this.studentsService.naikkelas(
+          students['SISWA-ID'],
+          students['KELAS'],
+        );
+      }
+    });
+
+    return '';
+  }
+
+  @Post('createUangSekolahByExcelDariBulanAgustus')
+  createUangSekolahDariBulanAgustus(@Body() data) {
+    const dirpath = join(__dirname, '..', '..', '..', 'uploads');
+
+    const workbook = xlsx.readFile(dirpath + `/${data.filename}`, {
+      type: 'array',
+    });
+    const worksheet = workbook.Sheets[data.arraySheet];
+    const json = xlsx.utils.sheet_to_json(worksheet);
+
+    json.map(async (students) => {
+      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+        await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+        const detail = {
+          id: students['SISWA-ID'],
+          grade: students['KELAS'],
+          uangSekolah: students['USEK 2024/2025'],
+          vBcaSekolah: '1' + students['SISWA-ID'],
+          unit: students['UNIT'],
+        };
+
+        BULAN_KELAS_NAIKAN.map(async (bulan) => {
+          await this.paymentsService.createUangSekolah(detail, bulan);
+        });
+      }
+    });
+
+    return '';
+  }
+
   @Post('createUangSekolahByExcel')
   createUangSekolah(@Body() data) {
     const dirpath = join(__dirname, '..', '..', '..', 'uploads');
@@ -195,11 +346,12 @@ export class StudentsController {
     const json = xlsx.utils.sheet_to_json(worksheet);
 
     json.map(async (students) => {
-      if (students['SISWA-ID'] && students['USEK']) {
+      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+        await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
         const detail = {
           id: students['SISWA-ID'],
           grade: students['KELAS'],
-          uangSekolah: students['USEK'],
+          uangSekolah: (students['USEK 2024/2025'] * 12) / 10,
           vBcaSekolah: '1' + students['SISWA-ID'],
           unit: students['UNIT'],
         };
@@ -223,6 +375,7 @@ export class StudentsController {
             await this.paymentsService.createUangSekolah(detail, bulan);
           });
         } else {
+          console.log(detail);
           bulans.map(async (bulan) => {
             await this.paymentsService.createUangSekolah(detail, bulan);
           });
@@ -401,6 +554,11 @@ export class StudentsController {
   @Post('laporan/unit')
   async laporanUnit(@Body() data) {
     return await this.studentsService.filterPaymentbyUnit(data);
+  }
+
+  @Post('laporan/gakbayar')
+  async laporanUnitgakbayar(@Body() data) {
+    return await this.studentsService.filterPaymentgakbayar(data);
   }
 
   @Post('unit')

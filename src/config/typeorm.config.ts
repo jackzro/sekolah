@@ -40,11 +40,11 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'mysql',
-  host: 'localhost',
+  host: '43.218.136.238',
   port: 3306,
-  username: 'root',
-  password: '',
-  database: 'sek2024',
+  username: 'jack',
+  password: 'jack2001',
+  database: 'sekolah',
   entities: [__dirname + '/../**/*.entity.{js,ts}'],
   migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
   cli: {
