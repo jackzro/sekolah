@@ -136,6 +136,7 @@ export class PaymentsService {
     payment.statusBayar = false;
     payment.cicilanKe = 0;
     payment.keterangan = '';
+    payment.kodeTransaksi = '';
     return payment.save();
   }
 
@@ -175,7 +176,7 @@ export class PaymentsService {
     payment.vBcaKode = student.vBcaKegiatan;
     payment.jumlahDenda = 0;
     payment.jumlahAdmin = 5000;
-    payment.bulanIuran = `2024-8`;
+    payment.bulanIuran = `2025-7`;
     payment.tglTagihan = new Date(student.tanggalTunggakan);
     payment.tglDenda = new Date(student.tanggalDenda);
     payment.caraBayar = '';
@@ -238,7 +239,7 @@ export class PaymentsService {
         break;
     }
 
-    const tanggal = detail.tanggalTunggakan.split('/');
+    const tanggal = detail.tanggalTunggakan.split('-');
     const payment = new Payment();
     payment.student = student.id;
     payment.unit = student.unit;
@@ -248,7 +249,7 @@ export class PaymentsService {
     payment.vBcaKode = '4' + student.id;
     payment.jumlahDenda = 0;
     payment.jumlahAdmin = 5000;
-    payment.bulanIuran = `${tanggal[2]}-${tanggal[0]}`;
+    payment.bulanIuran = `${tanggal[0]}-${tanggal[1]}`;
     payment.tglTagihan = new Date(detail.tanggalTunggakan);
     payment.tglDenda = new Date(detail.tanggalDenda);
     payment.caraBayar = '';
@@ -288,6 +289,7 @@ export class PaymentsService {
     } else if (student.grade === 'SMA 10' || student.grade === 'SMA 11') {
       paymentAprildanDaftarUlang = student.payments[0].jumlahTagihan + 450000;
     }
+    console.log(paymentAprildanDaftarUlang);
     await this.paymentRepository.update(student.payments[0].id, {
       jumlahTagihan: paymentAprildanDaftarUlang,
     });
@@ -358,6 +360,13 @@ export class PaymentsService {
       },
     });
     return payments;
+  }
+
+  async ubahPaymentDetail(data) {
+    const payment = await this.paymentRepository.update(data.id, {
+      jumlahTagihan: data.jumlahTagihan,
+    });
+    return payment;
   }
 
   async updateDendatonol(data) {

@@ -33,7 +33,7 @@ export class StudentsService {
       student.uangSekolah = createStudentDto['USEK'];
     }
 
-    student.status = createStudentDto['STATUS'];
+    student.status = true;
     student.keterangan = createStudentDto['keterangan'];
     student.anakBaru = createStudentDto['anak baru'];
     student.keterangan = createStudentDto[''];
@@ -230,6 +230,29 @@ export class StudentsService {
     }
   }
 
+  async filterKelas() {
+    const students = await this.studentRepository
+      .createQueryBuilder('students')
+      .leftJoinAndSelect('students.payments', 'payments')
+      .where({ unit: 'SMA PAX PATRIAE' })
+      .andWhere('students.grade =:grade', {
+        grade: `SMA 12`,
+      })
+      .andWhere('payments.iuran =:iuran', {
+        iuran: 'Uang Sekolah',
+      })
+      .andWhere('students.id=:id', {
+        id: '40658',
+      })
+      .andWhere('payments.period =:period', {
+        period: `Tahun Ajaran 2025/2026`,
+      })
+      .orderBy('students.id', 'ASC')
+      .getMany();
+
+    return students;
+  }
+
   async filterSetahun() {
     return await this.studentRepository
       .createQueryBuilder('students')
@@ -261,7 +284,7 @@ export class StudentsService {
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.payments', 'payments')
       .andWhere('payments.bulanIuran =:nowDate', {
-        nowDate: `2024-6`,
+        nowDate: `2026-6`,
       })
       .andWhere('payments.statusBayar =:statusBayar', { statusBayar: true })
       .orderBy('students.id', 'ASC')
@@ -273,10 +296,10 @@ export class StudentsService {
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.payments', 'payments')
       .andWhere('payments.bulanIuran =:nowDate', {
-        nowDate: `2024-4`,
+        nowDate: `2026-4`,
       })
       .andWhere('payments.statusBayar =:statusBayar', { statusBayar: false })
-      .andWhere('students.grade ')
+      // .andWhere('students.grade ')
       .orderBy('students.id', 'ASC')
       .getMany();
   }
@@ -295,7 +318,7 @@ export class StudentsService {
         // nowDate: `2024-1-10`,
       })
       // .andWhere('payments.tglTagihan <=:nowDate', {
-      //   nowDate: new Date(`2022-6-25`),
+      //   nowDate: new Date(`2025-12-26`),
       // })
       .addOrderBy('payments.tglTagihan', 'ASC')
       .getMany();

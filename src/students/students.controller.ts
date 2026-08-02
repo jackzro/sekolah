@@ -215,12 +215,12 @@ export class StudentsController {
     const json = xlsx.utils.sheet_to_json(worksheet);
 
     json.map(async (students) => {
-      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+      if (students['SISWA-ID'] && students['USEK 2026/2027']) {
         await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
         const detail = {
           id: students['SISWA-ID'],
           grade: students['KELAS'],
-          uangSekolah: students['USEK 2024/2025'],
+          uangSekolah: students['USEK 2026/2027'],
           vBcaSekolah: '1' + students['SISWA-ID'],
           unit: students['UNIT'],
         };
@@ -245,7 +245,9 @@ export class StudentsController {
     const json = xlsx.utils.sheet_to_json(worksheet);
 
     json.map(async (students) => {
-      await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+      if (students['SISWA-ID'] && students['USEK 2025/2026']) {
+        await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
+      }
     });
 
     return '';
@@ -264,20 +266,20 @@ export class StudentsController {
     json.map(async (students) => {
       if (
         students['SISWA-ID'] === undefined ||
-        students['U.KEG BARU'] === undefined
+        students['U. KEGIATAN'] === undefined
       ) {
         return;
       }
       const stu = {
         id: students['SISWA-ID'],
         unit: students['UNIT'],
-        tahun: '2024/2025',
-        uangKegiatan: students['U.KEG BARU'],
-        vBcaKegiatan: students['vbca ukeg'],
-        tanggalTunggakan: '2024-7-25',
-        tanggalDenda: '2024-8-10',
+        tahun: '2025/2026',
+        uangKegiatan: students['U. KEGIATAN'],
+        vBcaKegiatan: '2' + students['SISWA-ID'],
+        tanggalTunggakan: '2025-6-25',
+        tanggalDenda: '2025-7-10',
       };
-      // console.log(students['SISWA-ID'], students['U.KEG BARU']);
+
       await this.paymentsService.createUangKegiatanlewatExcel(stu);
     });
   }
@@ -293,7 +295,7 @@ export class StudentsController {
     const json = xlsx.utils.sheet_to_json(worksheet);
 
     json.map(async (students) => {
-      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+      if (students['SISWA-ID'] && students['USEK 2026/2027']) {
         await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
         await this.studentsService.naikkelas(
           students['SISWA-ID'],
@@ -302,7 +304,7 @@ export class StudentsController {
       }
     });
 
-    return '';
+    return json;
   }
 
   @Post('createUangSekolahByExcelDariBulanAgustus')
@@ -316,12 +318,12 @@ export class StudentsController {
     const json = xlsx.utils.sheet_to_json(worksheet);
 
     json.map(async (students) => {
-      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+      if (students['SISWA-ID'] && students['USEK 2026/2027']) {
         await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
         const detail = {
           id: students['SISWA-ID'],
           grade: students['KELAS'],
-          uangSekolah: students['USEK 2024/2025'],
+          uangSekolah: students['USEK 2026/2027'],
           vBcaSekolah: '1' + students['SISWA-ID'],
           unit: students['UNIT'],
         };
@@ -346,20 +348,21 @@ export class StudentsController {
     const json = xlsx.utils.sheet_to_json(worksheet);
 
     json.map(async (students) => {
-      if (students['SISWA-ID'] && students['USEK 2024/2025']) {
+      if (students['SISWA-ID'] && students['USEK 2026/2027']) {
         await this.studentsService.updateStatusToTrue(students['SISWA-ID']);
-        const detail = {
-          id: students['SISWA-ID'],
-          grade: students['KELAS'],
-          uangSekolah: (students['USEK 2024/2025'] * 12) / 10,
-          vBcaSekolah: '1' + students['SISWA-ID'],
-          unit: students['UNIT'],
-        };
+
         if (
           students['KELAS'] === 'SD 6' ||
           students['KELAS'] === 'SMP 9' ||
           students['KELAS'] === 'SMA 12'
         ) {
+          const detail = {
+            id: students['SISWA-ID'],
+            grade: students['KELAS'],
+            uangSekolah: (students['USEK 2026/2027'] * 12) / 10,
+            vBcaSekolah: '1' + students['SISWA-ID'],
+            unit: students['UNIT'],
+          };
           BULAN_KELAS_LULUSAN.map(async (bulan) => {
             await this.paymentsService.createUangSekolah(detail, bulan);
           });
@@ -371,11 +374,24 @@ export class StudentsController {
           students['KELAS'] === 'SMP 7' ||
           students['KELAS'] === 'SMA 10'
         ) {
-          BULAN_KELAS_NAIKAN.map(async (bulan) => {
+          const detail = {
+            id: students['SISWA-ID'],
+            grade: students['KELAS'],
+            uangSekolah: students['USEK 2026/2027'],
+            vBcaSekolah: '1' + students['SISWA-ID'],
+            unit: students['UNIT'],
+          };
+          bulans.map(async (bulan) => {
             await this.paymentsService.createUangSekolah(detail, bulan);
           });
         } else {
-          console.log(detail);
+          const detail = {
+            id: students['SISWA-ID'],
+            grade: students['KELAS'],
+            uangSekolah: students['USEK 2026/2027'],
+            vBcaSekolah: '1' + students['SISWA-ID'],
+            unit: students['UNIT'],
+          };
           bulans.map(async (bulan) => {
             await this.paymentsService.createUangSekolah(detail, bulan);
           });
@@ -396,6 +412,23 @@ export class StudentsController {
       };
     });
     return newStudents.length;
+  }
+
+  @Get('filterkelas')
+  async filterKelas() {
+    const students = await this.studentsService.filterKelas();
+
+    students.map((student) => {
+      student.payments.map((payment) => {
+        let data = {
+          id: payment.id,
+          jumlahTagihan: 552000,
+        };
+        this.paymentsService.ubahPaymentDetail(data);
+      });
+    });
+
+    return students;
   }
 
   @Post('payments')
@@ -469,15 +502,17 @@ export class StudentsController {
         BULAN_KELAS_LULUSAN.map(async (bulan) => {
           await this.paymentsService.buatUSek(data, bulan, student.tahun);
         });
-      } else if (
-        data.grade === 'SD 1' ||
-        data.grade === 'SMP 7' ||
-        data.grade === 'SMA 10'
-      ) {
-        BULAN_KELAS_NAIKAN.map(async (bulan) => {
-          await this.paymentsService.buatUSek(data, bulan, student.tahun);
-        });
-      } else {
+      }
+      //  else if (
+      //   data.grade === 'SD 1' ||
+      //   data.grade === 'SMP 7' ||
+      //   data.grade === 'SMA 10'
+      // ) {
+      //   BULAN_KELAS_NAIKAN.map(async (bulan) => {
+      //     await this.paymentsService.buatUSek(data, bulan, student.tahun);
+      //   });
+      // }
+      else {
         bulans.map(async (bulan) => {
           await this.paymentsService.buatUSek(student, bulan, student.tahun);
         });
@@ -708,7 +743,7 @@ export class StudentsController {
   async tidakbayarsetahunBikinUangDaftarUlang(@Body() detail) {
     const students =
       await this.studentsService.filterTidakSetahunUangDaftarUlang();
-
+    console.log('tidakbayarsetahun/uangDaftarUlang', students);
     let final = [];
     await Promise.all(
       students.map(async (student) => {
@@ -722,7 +757,7 @@ export class StudentsController {
         });
       }),
     );
-    return final;
+    return 'tidakbayarsetahun/uangDaftarUlang';
   }
 
   // @Post('dendaActivation')
